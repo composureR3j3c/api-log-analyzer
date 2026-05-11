@@ -1,9 +1,6 @@
 // App.jsx
 import { useEffect, useRef, useState } from "react";
 import {
-  AlertTriangle,
-  Upload,
-  Search,
   Activity,
   ShieldAlert,
   FileWarning,
@@ -13,6 +10,12 @@ import {
   RefreshCw,
   Sun,
 } from "lucide-react";
+import DashboardPage from "./pages/DashboardPage";
+import FilesPage from "./pages/FilesPage";
+import IncidentsPage from "./pages/IncidentsPage";
+import SecurityPage from "./pages/SecurityPage";
+import ServicesPage from "./pages/ServicesPage";
+import StreamingPage from "./pages/StreamingPage";
 
 const mockLogs = [];
 const storedFilesKey = "logmind.recentFiles";
@@ -35,12 +38,15 @@ export default function App() {
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
 
-  const filteredLogs = logs.filter((log) =>
-    [log.level, log.service, log.message, log.time]
-      .join(" ")
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  const searchQuery = search.trim().toLowerCase();
+  const filteredLogs = searchQuery
+    ? logs.filter((log) =>
+        [log.level, log.service, log.message, log.time]
+          .join(" ")
+          .toLowerCase()
+          .includes(searchQuery)
+      )
+    : logs;
 
   const criticalCount = logs.filter((log) => log.level === "Critical").length;
   const securityCount = logs.filter((log) => log.level === "Security").length;
@@ -86,7 +92,7 @@ export default function App() {
       const parsedLogs = parseLogFile(text);
 
       if (parsedLogs.length === 0) {
-        setUploadError("No readable log entries were found in that file.");
+        setUploadError("No warning, critical, or security entries were found.");
         return;
       }
 
@@ -128,7 +134,7 @@ export default function App() {
   };
 
   const openRecentFile = (file) => {
-    setLogs(file.logs);
+    setLogs(excludeInfoLogs(file.logs));
     setUploadedFile(file.name);
     setUploadError("");
     setSearch("");
@@ -149,6 +155,73 @@ export default function App() {
         return "bg-purple-500/20 text-purple-300 border-purple-500/30";
       default:
         return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+    }
+  };
+
+  const renderActivePage = () => {
+    switch (activeView) {
+      case "incidents":
+        return (
+          <IncidentsPage
+            logs={logs}
+            files={recentFiles}
+            getBadgeColor={getBadgeColor}
+            themeClasses={themeClasses}
+          />
+        );
+      case "files":
+        return (
+          <FilesPage
+            files={recentFiles}
+            onOpenFile={openRecentFile}
+            onUpload={openFilePicker}
+            themeClasses={themeClasses}
+          />
+        );
+      case "security":
+        return (
+          <SecurityPage
+            logs={logs}
+            files={recentFiles}
+            getBadgeColor={getBadgeColor}
+            themeClasses={themeClasses}
+          />
+        );
+      case "services":
+        return (
+          <ServicesPage
+            logs={logs}
+            files={recentFiles}
+            themeClasses={themeClasses}
+          />
+        );
+      case "streaming":
+        return (
+          <StreamingPage
+            logs={logs}
+            files={recentFiles}
+            getBadgeColor={getBadgeColor}
+            themeClasses={themeClasses}
+          />
+        );
+      default:
+        return (
+          <DashboardPage
+            criticalCount={criticalCount}
+            filteredLogs={filteredLogs}
+            getBadgeColor={getBadgeColor}
+            handleDrop={handleDrop}
+            openFilePicker={openFilePicker}
+            search={search}
+            securityCount={securityCount}
+            serviceCount={serviceCount}
+            setSearch={setSearch}
+            themeClasses={themeClasses}
+            totalLogCount={logs.length}
+            uploadedFile={uploadedFile}
+            uploadError={uploadError}
+          />
+        );
     }
   };
 
@@ -192,6 +265,8 @@ export default function App() {
             <SidebarItem
               icon={<FileWarning size={18} />}
               label="Incidents"
+              active={activeView === "incidents"}
+              onClick={() => setActiveView("incidents")}
               themeClasses={themeClasses}
             />
             <SidebarItem
@@ -204,16 +279,22 @@ export default function App() {
             <SidebarItem
               icon={<ShieldAlert size={18} />}
               label="Security"
+              active={activeView === "security"}
+              onClick={() => setActiveView("security")}
               themeClasses={themeClasses}
             />
             <SidebarItem
               icon={<Server size={18} />}
               label="Services"
+              active={activeView === "services"}
+              onClick={() => setActiveView("services")}
               themeClasses={themeClasses}
             />
             <SidebarItem
               icon={<RefreshCw size={18} />}
               label="Streaming"
+              active={activeView === "streaming"}
+              onClick={() => setActiveView("streaming")}
               themeClasses={themeClasses}
             />
           </nav>
@@ -239,131 +320,7 @@ export default function App() {
           </div>
         </aside>
 
-        {/* Main */}
-        <main className="flex-1 p-8">
-          {activeView === "files" ? (
-            <FilesView
-              files={recentFiles}
-              onOpenFile={openRecentFile}
-              onUpload={openFilePicker}
-              themeClasses={themeClasses}
-            />
-          ) : (
-            <>
-              {/* Top Bar */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                  <h2 className="text-3xl font-bold">
-                    AI Incident Dashboard
-                  </h2>
-                  <p className={`${themeClasses.muted} mt-1`}>
-                    Monitor logs, detect anomalies, and analyze incidents.
-                  </p>
-                </div>
-
-                <div className="relative w-full md:w-[380px]">
-                  <Search
-                    className={`absolute left-4 top-3.5 ${themeClasses.muted}`}
-                    size={18}
-                  />
-
-                  <input
-                    type="text"
-                    placeholder="Search logs..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className={`w-full border rounded-2xl pl-11 pr-4 py-3 outline-none focus:border-yellow-500 ${themeClasses.input} ${themeClasses.border}`}
-                  />
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-                <StatCard
-                  title="Critical Errors"
-                  value={criticalCount}
-                  icon={<AlertTriangle />}
-                  themeClasses={themeClasses}
-                />
-
-                <StatCard
-                  title="Security Alerts"
-                  value={securityCount}
-                  icon={<ShieldAlert />}
-                  themeClasses={themeClasses}
-                />
-
-                <StatCard
-                  title="Services Monitored"
-                  value={serviceCount}
-                  icon={<Server />}
-                  themeClasses={themeClasses}
-                />
-              </div>
-
-              {/* Upload Section */}
-              <div
-                className={`border rounded-3xl p-8 mb-8 ${themeClasses.panel} ${themeClasses.border}`}
-              >
-                <div
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={handleDrop}
-                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl py-16 px-5 ${themeClasses.dashedBorder}`}
-                >
-                  <Upload size={42} className="text-yellow-500 mb-4" />
-
-                  <h3 className="text-xl font-semibold mb-2">
-                    Upload Log Files
-                  </h3>
-
-                  <p className={`${themeClasses.muted} mb-6 text-center`}>
-                    Drag and drop a .log file or upload manually
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={openFilePicker}
-                    className="bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-2xl font-semibold transition"
-                  >
-                    Select File
-                  </button>
-
-                  {uploadedFile && (
-                    <p className="mt-4 text-sm text-green-400">
-                      Loaded {uploadedFile}
-                    </p>
-                  )}
-
-                  {uploadError && (
-                    <p className="mt-4 text-sm text-red-400">{uploadError}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Logs Table */}
-              <LogsTable
-                logs={filteredLogs}
-                getBadgeColor={getBadgeColor}
-                themeClasses={themeClasses}
-              />
-
-              {/* AI Analysis Section */}
-              <div
-                className={`mt-8 border rounded-3xl p-8 ${themeClasses.panel} ${themeClasses.border}`}
-              >
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="bg-yellow-500 p-2 rounded-xl">
-                    <Activity className="text-black" size={20} />
-                  </div>
-
-                  <h3 className="text-2xl font-semibold">
-                    AI Root Cause Analysis
-                  </h3>
-                </div>
-              </div>
-            </>
-          )}
-        </main>
+        <main className="flex-1 p-8">{renderActivePage()}</main>
       </div>
     </div>
   );
@@ -381,7 +338,8 @@ function parseLogFile(text) {
       service: detectService(line),
       message: stripTimestamp(line),
       time: detectTime(line),
-    }));
+    }))
+    .filter((log) => log.level !== "Info");
 }
 
 function detectLevel(line) {
@@ -427,7 +385,15 @@ function readStoredRecentFiles() {
 
     if (!Array.isArray(storedFiles)) return [];
 
-    return storedFiles.filter(isStoredLogFile);
+    return storedFiles.filter(isStoredLogFile).map((file) => {
+      const logs = excludeInfoLogs(file.logs);
+
+      return {
+        ...file,
+        entryCount: logs.length,
+        logs,
+      };
+    });
   } catch {
     return [];
   }
@@ -451,6 +417,10 @@ function isStoredLogFile(file) {
     typeof file.entryCount === "number" &&
     Array.isArray(file.logs)
   );
+}
+
+function excludeInfoLogs(logs) {
+  return logs.filter((log) => log.level !== "Info");
 }
 
 function getThemeClasses(theme) {
@@ -495,147 +465,6 @@ function getThemeClasses(theme) {
   };
 }
 
-function LogsTable({ logs, getBadgeColor, themeClasses }) {
-  return (
-    <div
-      className={`border rounded-3xl overflow-hidden ${themeClasses.panel} ${themeClasses.border}`}
-    >
-      <div className={`p-6 border-b ${themeClasses.border}`}>
-        <h3 className="text-xl font-semibold">Recent AI Detected Incidents</h3>
-      </div>
-
-      <div className="overflow-auto">
-        <table className="w-full">
-          <thead className={`${themeClasses.tableHead} text-sm`}>
-            <tr>
-              <th className="text-left p-5">Severity</th>
-              <th className="text-left p-5">Service</th>
-              <th className="text-left p-5">Message</th>
-              <th className="text-left p-5">Time</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {logs.length > 0 ? (
-              logs.map((log) => (
-                <tr
-                  key={log.id}
-                  className={`border-t transition ${themeClasses.rowBorder} ${themeClasses.rowHover}`}
-                >
-                  <td className="p-5">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs border ${getBadgeColor(
-                        log.level
-                      )}`}
-                    >
-                      {log.level}
-                    </span>
-                  </td>
-
-                  <td className="p-5">{log.service}</td>
-
-                  <td className="p-5">{log.message}</td>
-
-                  <td className={`p-5 ${themeClasses.muted}`}>{log.time}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan="4"
-                  className={`border-t p-8 text-center ${themeClasses.rowBorder} ${themeClasses.muted}`}
-                >
-                  No logs match your search.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function FilesView({ files, onOpenFile, onUpload, themeClasses }) {
-  return (
-    <>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h2 className="text-3xl font-bold">Uploaded Files</h2>
-          <p className={`${themeClasses.muted} mt-1`}>
-            Browse recently uploaded .log files and reopen their parsed entries.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={onUpload}
-          className="inline-flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-5 py-3 rounded-2xl font-semibold transition"
-        >
-          <Upload size={18} />
-          Upload File
-        </button>
-      </div>
-
-      <div
-        className={`border rounded-3xl overflow-hidden ${themeClasses.panel} ${themeClasses.border}`}
-      >
-        <div className={`p-6 border-b ${themeClasses.border}`}>
-          <h3 className="text-xl font-semibold">Recent Uploads</h3>
-        </div>
-
-        {files.length > 0 ? (
-          <div className={`divide-y ${themeClasses.divider}`}>
-            {files.map((file) => (
-              <button
-                key={file.id}
-                type="button"
-                onClick={() => onOpenFile(file)}
-                className={`w-full flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 text-left transition ${themeClasses.rowHover}`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="bg-yellow-500/20 text-yellow-400 p-3 rounded-2xl">
-                    <FileWarning size={22} />
-                  </div>
-
-                  <div>
-                    <p className="font-semibold">{file.name}</p>
-                    <p className={`text-sm ${themeClasses.muted} mt-1`}>
-                      {file.entryCount} entries parsed
-                    </p>
-                  </div>
-                </div>
-
-                <div className={`text-sm ${themeClasses.muted} md:text-right`}>
-                  <p>{formatFileSize(file.size)}</p>
-                  <p className="mt-1">{file.uploadedAt}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="p-10 text-center">
-            <FolderOpen
-              className={`mx-auto mb-4 ${themeClasses.emptyIcon}`}
-              size={42}
-            />
-            <p className="text-lg font-semibold">No uploaded files yet</p>
-            <p className={`mt-2 ${themeClasses.muted}`}>
-              Upload a .log file to see it listed here.
-            </p>
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-function formatFileSize(bytes) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function SidebarItem({ icon, label, active = false, onClick, themeClasses }) {
   const classes = themeClasses || getThemeClasses("dark");
 
@@ -650,25 +479,5 @@ function SidebarItem({ icon, label, active = false, onClick, themeClasses }) {
       {icon}
       <span>{label}</span>
     </button>
-  );
-}
-
-function StatCard({ title, value, icon, themeClasses }) {
-  return (
-    <div
-      className={`border rounded-3xl p-6 ${themeClasses.panel} ${themeClasses.border}`}
-    >
-      <div className="flex items-center justify-between mb-5">
-        <div className="bg-yellow-500/20 text-yellow-400 p-3 rounded-2xl">
-          {icon}
-        </div>
-
-        <span className="text-xs text-green-400">+12%</span>
-      </div>
-
-      <h3 className="text-3xl font-bold mb-1">{value}</h3>
-
-      <p className={themeClasses.muted}>{title}</p>
-    </div>
   );
 }
