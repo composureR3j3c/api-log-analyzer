@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Sun,
 } from "lucide-react";
+import AiChatWidget from "./components/AiChatWidget";
 import DashboardPage from "./pages/DashboardPage";
 import FilesPage from "./pages/FilesPage";
 import IncidentsPage from "./pages/IncidentsPage";
@@ -322,6 +323,13 @@ export default function App() {
 
         <main className="flex-1 p-8">{renderActivePage()}</main>
       </div>
+
+      <AiChatWidget
+        activeView={activeView}
+        logs={logs}
+        themeClasses={themeClasses}
+        uploadedFile={uploadedFile}
+      />
     </div>
   );
 }
