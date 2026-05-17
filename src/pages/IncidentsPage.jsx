@@ -1,4 +1,5 @@
 import { AlertTriangle, FileWarning, ShieldAlert } from "lucide-react";
+import IncidentAiSummary from "./IncidentAiSummary";
 
 export default function IncidentsPage({
   logs,
@@ -20,6 +21,12 @@ export default function IncidentsPage({
       <PageHeader
         title="Incidents"
         description="Review detected incidents from the active uploaded log file."
+        themeClasses={themeClasses}
+      />
+
+      <IncidentAiSummary
+        logs={logs}
+        files={files}
         themeClasses={themeClasses}
       />
 
