@@ -61,8 +61,8 @@ export default function StreamingPage({
                     {log.level}
                   </span>
 
-                  <p className="font-semibold md:w-40">{log.service}</p>
-                  <p className={`${themeClasses.muted} flex-1`}>
+                  <p className="font-semibold md:w-40 ">{log.service}</p>
+                  <p className={`${themeClasses.muted} flex-1 word-break break-all`}>
                     {log.message}
                   </p>
                 </div>

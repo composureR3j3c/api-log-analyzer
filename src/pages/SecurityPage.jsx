@@ -69,7 +69,7 @@ export default function SecurityPage({
                     >
                       {log.level}
                     </span>
-                    <p className="mt-3 font-semibold">{log.message}</p>
+                    <p className="mt-3 font-semibold  word-break break-all">{log.message}</p>
                     <p className={`${themeClasses.muted} text-sm mt-1`}>
                       {log.service}
                     </p>

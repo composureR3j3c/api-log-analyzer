@@ -80,7 +80,7 @@ export default function IncidentsPage({
                     >
                       {log.level}
                     </span>
-                    <p className="mt-3 font-semibold">{log.message}</p>
+                    <p className="mt-3 font-semibold  word-break break-all">{log.message}</p>
                     <p className={`${themeClasses.muted} mt-1 text-sm`}>
                       {log.service}
                     </p>

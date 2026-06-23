@@ -9,6 +9,8 @@ import {
   Server,
   RefreshCw,
   Sun,
+  Menu,
+  X,
 } from "lucide-react";
 import AiChatWidget from "./components/AiChatWidget";
 import DashboardPage from "./pages/DashboardPage";
@@ -28,6 +30,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [recentFiles, setRecentFiles] = useState(readStoredRecentFiles);
   const [uploadedFile, setUploadedFile] = useState(readStoredActiveFileName);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logs, setLogs] = useState(() => {
     const activeFileName = readStoredActiveFileName();
     const activeFile = readStoredRecentFiles().find(
@@ -226,6 +229,12 @@ export default function App() {
     }
   };
 
+  const closeSidebar = () => setSidebarOpen(false);
+  const handleNavClick = (view) => {
+    setActiveView(view);
+    setSidebarOpen(false);
+  };
+
   return (
     <div className={`min-h-screen ${themeClasses.page}`}>
       <input
@@ -237,10 +246,38 @@ export default function App() {
         aria-label="Upload .log file"
       />
 
+      {/* Mobile header */}
+      <div className={`md:hidden sticky top-0 z-40 flex items-center justify-between p-4 border-b ${themeClasses.sidebar} ${themeClasses.border}`}>
+        <div className="flex items-center gap-2">
+          <div className="bg-yellow-500 p-1.5 rounded-lg">
+            <Activity size={16} className="text-black" />
+          </div>
+          <h1 className="font-bold text-sm">LogMind AI</h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={`p-2 rounded-lg transition ${themeClasses.navIdle}`}
+          aria-label="Toggle menu"
+        >
+          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+
       {/* Sidebar */}
       <div className="flex">
         <aside
-          className={`w-72 border-r min-h-screen p-5 ${themeClasses.sidebar} ${themeClasses.border}`}
+          className={`fixed md:relative top-0 left-0 h-screen md:h-auto w-72 border-r min-h-screen p-5 transition-transform z-40 ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          } ${themeClasses.sidebar} ${themeClasses.border}`}
         >
           <div className="flex items-center gap-3 mb-10">
             <div className="bg-yellow-500 p-2 rounded-xl">
@@ -260,42 +297,42 @@ export default function App() {
               icon={<Activity size={18} />}
               label="Dashboard"
               active={activeView === "dashboard"}
-              onClick={() => setActiveView("dashboard")}
+              onClick={() => handleNavClick("dashboard")}
               themeClasses={themeClasses}
             />
             <SidebarItem
               icon={<FileWarning size={18} />}
               label="Incidents"
               active={activeView === "incidents"}
-              onClick={() => setActiveView("incidents")}
+              onClick={() => handleNavClick("incidents")}
               themeClasses={themeClasses}
             />
             <SidebarItem
               icon={<FolderOpen size={18} />}
               label="Files"
               active={activeView === "files"}
-              onClick={() => setActiveView("files")}
+              onClick={() => handleNavClick("files")}
               themeClasses={themeClasses}
             />
             <SidebarItem
               icon={<ShieldAlert size={18} />}
               label="Security"
               active={activeView === "security"}
-              onClick={() => setActiveView("security")}
+              onClick={() => handleNavClick("security")}
               themeClasses={themeClasses}
             />
             <SidebarItem
               icon={<Server size={18} />}
               label="Services"
               active={activeView === "services"}
-              onClick={() => setActiveView("services")}
+              onClick={() => handleNavClick("services")}
               themeClasses={themeClasses}
             />
             <SidebarItem
               icon={<RefreshCw size={18} />}
               label="Streaming"
               active={activeView === "streaming"}
-              onClick={() => setActiveView("streaming")}
+              onClick={() => handleNavClick("streaming")}
               themeClasses={themeClasses}
             />
           </nav>
@@ -321,7 +358,7 @@ export default function App() {
           </div>
         </aside>
 
-        <main className="flex-1 p-8">{renderActivePage()}</main>
+        <main className="flex-1 p-4 md:p-8 w-full">{renderActivePage()}</main>
       </div>
 
       <AiChatWidget
